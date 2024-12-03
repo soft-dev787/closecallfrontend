@@ -6,7 +6,8 @@ import axios from "axios";
 import io from "socket.io-client";
 
 const axiosInstance = axios.create({
-  baseURL: "https://sculpin-related-dragon.ngrok-free.app/",
+  // baseURL: "https://sculpin-related-dragon.ngrok-free.app/",
+  baseURL: "https://closecallbackend.vercel.app/",
 });
 
 const Loader = ({ size }) => {
