@@ -31,7 +31,7 @@ const RealtimeTranscription = ({ newEvent }) => {
   }, [newEvent]);
 
   const getToken = async () => {
-    const response = await fetch("http://localhost:8080/token");
+    const response = await fetch("https://closecallbackend.vercel.app/token");
     const data = await response.json();
 
     if (data.error) {
@@ -147,7 +147,7 @@ const RealtimeTranscription = ({ newEvent }) => {
   );
 };
 
-const socket = io("http://localhost:8080", {
+const socket = io("https://closecallbackend.vercel.app", {
   autoConnect: false,
 });
 
