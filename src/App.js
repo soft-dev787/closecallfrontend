@@ -148,7 +148,8 @@ const RealtimeTranscription = ({ newEvent }) => {
   );
 };
 
-const socket = io("https://closecallbackend.vercel.app", {
+// const socket = io("https://closecallbackend.vercel.app", {
+const socket = io("wss://closecallbackend.vercel.app", {
   autoConnect: false,
   // transports:['']
   transports: ["websocket"],
