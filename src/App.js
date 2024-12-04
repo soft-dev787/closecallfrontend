@@ -45,9 +45,19 @@ const RealtimeTranscription = ({ newEvent, transferToNumber }) => {
         } else if (newEvent.type == "call.hungup") {
           await endTranscription();
         } else if (newEvent.type == "call.unsuccessful_transfer") {
-          console.log("call.unsuccessful_transfer");
+          // temppp
+          if (transferToNumber.value) {
+            executeGPTAndTwilio(
+              transcript,
+              "from number",
+              transferToNumber.value
+            );
+          }
+          endTranscription();
+          setTranscript("");
+
+          // temppp
         } else if (newEvent.type == "call.transferred") {
-          console.log("call.transferred");
           if (transferToNumber.value) {
             executeGPTAndTwilio(
               transcript,
