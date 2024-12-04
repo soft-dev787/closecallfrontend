@@ -43,8 +43,10 @@ const RealtimeTranscription = ({ newEvent, transferToNumber }) => {
         if (newEvent.type == "call.answered") {
           await startTranscription();
         } else if (newEvent.type == "call.hungup") {
+          setTranscript("");
           await endTranscription();
         } else if (newEvent.type == "call.unsuccessful_transfer") {
+          setTranscript("");
           // temppp
           if (transferToNumber.value) {
             executeGPTAndTwilio(
@@ -54,10 +56,10 @@ const RealtimeTranscription = ({ newEvent, transferToNumber }) => {
             );
           }
           endTranscription();
-          setTranscript("");
 
           // temppp
         } else if (newEvent.type == "call.transferred") {
+          setTranscript("");
           if (transferToNumber.value) {
             executeGPTAndTwilio(
               transcript,
@@ -66,7 +68,6 @@ const RealtimeTranscription = ({ newEvent, transferToNumber }) => {
             );
           }
           endTranscription();
-          setTranscript("");
         }
       }
     };
@@ -104,6 +105,7 @@ const RealtimeTranscription = ({ newEvent, transferToNumber }) => {
 
     realtimeTranscriber.current.on("error", (event) => {
       console.error(event);
+      setTranscript("");
       realtimeTranscriber.current.close();
       realtimeTranscriber.current = null;
     });
