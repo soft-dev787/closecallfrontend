@@ -9,13 +9,28 @@ import { getBackendURL } from "./utils/getBackendURL";
 const axiosInstance = axios.create({
   // baseURL: "https://sculpin-related-dragon.ngrok-free.app/",
   baseURL: getBackendURL(),
+  headers: {
+    "ngrok-skip-browser-warning": "1234",
+  },
 });
 
 const Loader = ({ size }) => {
   return <span class="loader" style={{ width: size, height: size }}></span>;
 };
 
-const RealtimeTranscription = ({ newEvent }) => {
+const executeGPTAndTwilio = async (transcript, fromNumber, toNumber) => {
+  try {
+    const response = await axiosInstance.post("/summarize", {
+      transcript: transcript,
+      fromNumber: "+61483921188",
+      toNumber: toNumber,
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const RealtimeTranscription = ({ newEvent, transferToNumber }) => {
   const realtimeTranscriber = useRef(null);
   const recorder = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -23,24 +38,35 @@ const RealtimeTranscription = ({ newEvent }) => {
   const [recordingLoading, setRecordingLoading] = useState(false);
 
   useEffect(() => {
-    if (newEvent) {
-      if (newEvent.type == "call.answered") {
-        startTranscription();
-      } else if (newEvent.type == "call.hungup") {
-        endTranscription();
+    const handleWebhooks = async () => {
+      if (newEvent) {
+        if (newEvent.type == "call.answered") {
+          await startTranscription();
+        } else if (newEvent.type == "call.hungup") {
+          await endTranscription();
+        } else if (newEvent.type == "call.unsuccessful_transfer") {
+          console.log("call.unsuccessful_transfer");
+        } else if (newEvent.type == "call.transferred") {
+          console.log("call.transferred");
+          if (transferToNumber.value) {
+            executeGPTAndTwilio(
+              transcript,
+              "from number",
+              transferToNumber.value
+            );
+          }
+          endTranscription();
+          setTranscript("");
+        }
       }
-    }
+    };
+    handleWebhooks();
   }, [newEvent]);
 
   const getToken = async () => {
-    const response = await fetch(`${getBackendURL()}/token`);
-    const data = await response.json();
+    const response = await axiosInstance.get(`/token`);
 
-    if (data.error) {
-      alert(data.error);
-    }
-
-    return data.token;
+    return response.data.token;
   };
 
   const startTranscription = async () => {
@@ -106,7 +132,6 @@ const RealtimeTranscription = ({ newEvent }) => {
 
   const endTranscription = async (event) => {
     event?.preventDefault();
-    setTranscript("");
     setIsRecording(false);
     await realtimeTranscriber.current.close();
     realtimeTranscriber.current = null;
@@ -151,6 +176,10 @@ const RealtimeTranscription = ({ newEvent }) => {
 
 const socket = io(getBackendURL(), {
   autoConnect: false,
+  transports: ["websocket"],
+  extraHeaders: {
+    "ngrok-skip-browser-warning": "1234",
+  },
 });
 
 function App() {
@@ -158,12 +187,8 @@ function App() {
   const [verificationMessage, setVerificationMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const emailFieldRef = useRef();
-  const [socketMessage, setSocketMessage] = useState(null);
+  const transferToFieldRef = useRef();
   const [newEvent, setNewEvent] = useState(null);
-  // socket.on("webhookReceived", (data) => {
-  //   console.log("Webhook data received:", data);
-  //   // Handle the data as needed (e.g., display it in the UI)
-  // });
 
   useEffect(() => {
     socket.connect();
@@ -177,8 +202,6 @@ function App() {
     socket.on("callEvent", (data) => {
       console.log(data);
       setNewEvent(data);
-      // socket.close();
-      // setNewEvent(Math.floor(Math.random() * 1000));
     });
   }, []);
 
@@ -203,9 +226,6 @@ function App() {
     } finally {
       setVerificationLoader(false);
     }
-    // setTimeout(() => {
-    //   setVerificationMessage(false);
-    // }, 3000);
   };
 
   return (
@@ -265,6 +285,21 @@ function App() {
           >
             Verify
           </button>
+          <label htmlFor="transfer_to">Transfer to</label>
+          <input
+            ref={transferToFieldRef}
+            type="text"
+            style={{
+              width: 300,
+              padding: "10px 12px",
+              borderRadius: 6,
+              outline: "none",
+              border: "none",
+              backgroundColor: "#09032F",
+              color: "#ffffff",
+            }}
+          />
+          <p style={{ fontWeight: 500, fontSize: 20 }}>Example: +18882255322</p>
           {verificationMessage && (
             <p style={{ color: "green", fontSize: 22, fontWeight: 500 }}>
               The user is now verified. A live transcript will be displayed here
@@ -279,7 +314,10 @@ function App() {
         </div>
       </div>
 
-      <RealtimeTranscription newEvent={newEvent} />
+      <RealtimeTranscription
+        transferToNumber={transferToFieldRef.current}
+        newEvent={newEvent}
+      />
     </div>
   );
 }
