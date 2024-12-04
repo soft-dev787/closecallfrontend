@@ -4,10 +4,11 @@ import { RealtimeTranscriber } from "assemblyai/streaming";
 import * as RecordRTC from "recordrtc";
 import axios from "axios";
 import io from "socket.io-client";
+import { getBackendURL } from "./utils/getBackendURL";
 
 const axiosInstance = axios.create({
   // baseURL: "https://sculpin-related-dragon.ngrok-free.app/",
-  baseURL: "https://closecallbackend.vercel.app/",
+  baseURL: getBackendURL(),
 });
 
 const Loader = ({ size }) => {
@@ -32,7 +33,7 @@ const RealtimeTranscription = ({ newEvent }) => {
   }, [newEvent]);
 
   const getToken = async () => {
-    const response = await fetch("https://closecallbackend.vercel.app/token");
+    const response = await fetch(`${getBackendURL()}/token`);
     const data = await response.json();
 
     if (data.error) {
@@ -148,11 +149,8 @@ const RealtimeTranscription = ({ newEvent }) => {
   );
 };
 
-// const socket = io("https://closecallbackend.vercel.app", {
-const socket = io("wss://closecallbackend.vercel.app", {
+const socket = io(getBackendURL(), {
   autoConnect: false,
-  // transports:['']
-  transports: ["websocket"],
 });
 
 function App() {
@@ -192,7 +190,7 @@ function App() {
     setVerificationLoader(true);
     setErrorMessage(null);
     try {
-      const response = await axiosInstance.post("finduser", {
+      const response = await axiosInstance.post("/finduser", {
         email: emailFieldRef.current.value,
       });
 
