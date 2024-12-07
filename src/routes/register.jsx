@@ -26,7 +26,7 @@ const RegisterPage = () => {
           password,
         })
         .then((resp) => {
-          afterLoginRegister(resp);
+          afterLoginRegister(resp.data);
           navigate("/");
         })
         .catch((error) => {

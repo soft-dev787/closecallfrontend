@@ -537,7 +537,6 @@ function App() {
 
   useEffect(() => {
     socket.on("callEvent", (data) => {
-      console.log(data);
       setNewEvent(data);
     });
   }, []);
